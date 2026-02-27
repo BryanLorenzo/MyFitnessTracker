@@ -265,8 +265,25 @@ function renderDashboard() {
 
   // Stats
   const sorted = sortByDate(state.weights);
-  document.getElementById('dash-weight').innerHTML = sorted.length
-    ? `${sorted[sorted.length - 1].value}<span class="stat-unit">kg</span>`
+
+  // Weekly average: find Mon–Sun of current week
+  const nowDate = new Date();
+  const dayOfWeek = nowDate.getDay(); // 0=Sun,1=Mon,...6=Sat
+  const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek); // days to last Monday
+  const monday = new Date(nowDate);
+  monday.setDate(nowDate.getDate() + diffToMon);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  const monStr = monday.toISOString().split('T')[0];
+  const sunStr = sunday.toISOString().split('T')[0];
+  const weekWeights = state.weights.filter(w => w.date >= monStr && w.date <= sunStr);
+  const weekAvg = weekWeights.length
+    ? (weekWeights.reduce((s, w) => s + w.value, 0) / weekWeights.length).toFixed(1)
+    : null;
+  document.getElementById('dash-weight').innerHTML = weekAvg
+    ? `${weekAvg}<span class="stat-unit">kg</span>`
     : `—<span class="stat-unit">kg</span>`;
   document.getElementById('dash-workouts').textContent = state.workouts.length;
   document.getElementById('dash-meals').textContent = state.mealPlans.length;
@@ -301,7 +318,7 @@ function renderDashboard() {
       if (wtype === 'run') {
         icon = '🏃';
         iconBg = 'linear-gradient(135deg,rgba(20,184,166,0.25),rgba(13,148,136,0.12))';
-        subText = `${fmtDate(w.date)} · ${w.duration} min · ${fmtPace(w.pace || (w.avgSpeed ? 60/w.avgSpeed : 6))} /km`;
+        subText = `${fmtDate(w.date)} · ${w.duration} min · ${fmtPace(w.pace || (w.avgSpeed ? 60 / w.avgSpeed : 6))} /km`;
         valueText = `${w.distance} km`;
         valueColor = '#14b8a6';
       } else if (wtype === 'rest') {
@@ -1128,7 +1145,7 @@ function renderWorkoutHistory() {
               <div class="workout-card-meta">
                 <span>📅 ${fmtDate(w.date)}</span>
                 <span>⏱️ ${w.duration} min</span>
-                <span>🕐 ${fmtPace(w.pace || (w.avgSpeed ? 60/w.avgSpeed : 6))} /km</span>
+                <span>🕐 ${fmtPace(w.pace || (w.avgSpeed ? 60 / w.avgSpeed : 6))} /km</span>
                 <span>📍 ${w.distance} km</span>
               </div>
               ${w.notes ? `<div style="margin-top:6px;font-size:12px;color:var(--text-muted);font-style:italic;">"${w.notes}"</div>` : ''}
@@ -1143,7 +1160,7 @@ function renderWorkoutHistory() {
             <div class="run-bar-sep"></div>
             <div class="run-bar-item">
               <div class="run-bar-label">Passo medio</div>
-              <div class="run-bar-value">${fmtPace(w.pace || (w.avgSpeed ? 60/w.avgSpeed : 6))} <span class="run-bar-unit">/km</span></div>
+              <div class="run-bar-value">${fmtPace(w.pace || (w.avgSpeed ? 60 / w.avgSpeed : 6))} <span class="run-bar-unit">/km</span></div>
             </div>
             <div class="run-bar-sep"></div>
             <div class="run-bar-item">
