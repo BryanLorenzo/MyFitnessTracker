@@ -318,7 +318,7 @@ function renderDashboard() {
       if (wtype === 'run') {
         icon = '🏃';
         iconBg = 'linear-gradient(135deg,rgba(20,184,166,0.25),rgba(13,148,136,0.12))';
-        subText = `${fmtDate(w.date)} · ${w.duration} min · ${fmtPace(w.pace || (w.avgSpeed ? 60 / w.avgSpeed : 6))} /km`;
+        subText = `${fmtDate(w.date)} · ${fmtDuration(w.duration)} · ${fmtPace(w.pace || (w.avgSpeed ? 60 / w.avgSpeed : 6))} /km`;
         valueText = `${w.distance} km`;
         valueColor = '#14b8a6';
       } else if (wtype === 'rest') {
@@ -801,6 +801,29 @@ function parsePace(val) {
   return isNaN(n) || n <= 0 ? null : n;
 }
 
+function parseDuration(val) {
+  // Accepts 'MM:SS' -> decimal minutes, or plain decimal '35.5'
+  if (!val) return null;
+  const str = String(val).trim();
+  const parts = str.split(':');
+  if (parts.length === 2) {
+    const m = parseInt(parts[0]) || 0;
+    const s = parseInt(parts[1]) || 0;
+    if (m <= 0 && s <= 0) return null;
+    return m + s / 60;
+  }
+  const n = parseFloat(str);
+  return isNaN(n) || n <= 0 ? null : n;
+}
+
+function fmtDuration(decimalMin) {
+  // Converts decimal minutes to 'M:SS'
+  if (decimalMin == null || isNaN(decimalMin)) return '—';
+  const m = Math.floor(decimalMin);
+  const s = Math.round((decimalMin - m) * 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
 function fmtPace(paceMinPerKm) {
   // Converts decimal minutes to 'M:SS' string
   const m = Math.floor(paceMinPerKm);
@@ -809,11 +832,11 @@ function fmtPace(paceMinPerKm) {
 }
 
 function updateRunPreview() {
-  const dur = parseFloat(document.getElementById('run-duration').value);
+  const durMin = parseDuration(document.getElementById('run-duration').value);
   const paceMin = parsePace(document.getElementById('run-speed').value);
   const preview = document.getElementById('run-stats-preview');
-  if (dur > 0 && paceMin) {
-    const km = (dur / paceMin).toFixed(2);
+  if (durMin && paceMin) {
+    const km = (durMin / paceMin).toFixed(2);
     document.getElementById('run-distance-preview').textContent = km;
     preview.style.display = 'flex';
   } else {
@@ -1015,10 +1038,10 @@ document.getElementById('workout-form').addEventListener('submit', function (e) 
 
   // ── CORSA ──
   if (currentWorkoutType === 'run') {
-    const duration = parseFloat(document.getElementById('run-duration').value);
+    const duration = parseDuration(document.getElementById('run-duration').value);
     const paceMin = parsePace(document.getElementById('run-speed').value);
     if (!duration || !paceMin) {
-      toast('Inserisci durata e passo medio (es. 5:30)!', 'error');
+      toast('Inserisci durata (es. 35:24) e passo medio (es. 5:30)!', 'error');
       return;
     }
     const distance = parseFloat((duration / paceMin).toFixed(2));
@@ -1144,7 +1167,7 @@ function renderWorkoutHistory() {
               <div class="workout-card-name">🏃 ${w.name}</div>
               <div class="workout-card-meta">
                 <span>📅 ${fmtDate(w.date)}</span>
-                <span>⏱️ ${w.duration} min</span>
+                <span>⏱️ ${fmtDuration(w.duration)}</span>
                 <span>🕐 ${fmtPace(w.pace || (w.avgSpeed ? 60 / w.avgSpeed : 6))} /km</span>
                 <span>📍 ${w.distance} km</span>
               </div>
@@ -1155,7 +1178,7 @@ function renderWorkoutHistory() {
           <div class="run-summary-bars">
             <div class="run-bar-item">
               <div class="run-bar-label">Durata</div>
-              <div class="run-bar-value">${w.duration} <span class="run-bar-unit">min</span></div>
+              <div class="run-bar-value">${fmtDuration(w.duration)}</div>
             </div>
             <div class="run-bar-sep"></div>
             <div class="run-bar-item">
