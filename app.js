@@ -211,6 +211,7 @@ function navigate(pageId) {
   if (pageId === 'peso') renderWeightPage();
   if (pageId === 'alimentazione') renderMealPage();
   if (pageId === 'allenamento') renderWorkoutPage();
+  if (pageId === 'tracker') renderTrackerPage();
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -1653,7 +1654,125 @@ function renderTrackerPlansPanel() {
 }
 
 
+// ─── TRACKER SETTIMANA ──────────────────────────────────────
+
+function getWeekTrackerKey() {
+  const email = getCurrentUser() || sessionStorage.getItem('ft_session_temp');
+  if (!email) return null;
+  const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  // Key includes ISO week number so each week is independent
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const weekNum = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+  return `ft_${safeEmail}_tracker_${now.getFullYear()}_w${weekNum}`;
+}
+
+function loadWeekTracker() {
+  const key = getWeekTrackerKey();
+  if (!key) return {};
+  return JSON.parse(localStorage.getItem(key)) || {};
+}
+
+function saveWeekTracker(data) {
+  const key = getWeekTrackerKey();
+  if (!key) return;
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function toggleTrackerDay(dateStr, type) {
+  const data = loadWeekTracker();
+  if (!data[dateStr]) data[dateStr] = { alimentazione: false, allenamento: false };
+  data[dateStr][type] = !data[dateStr][type];
+  saveWeekTracker(data);
+  renderTrackerPage();
+}
+
+function renderTrackerPage() {
+  const grid = document.getElementById('tracker-week-grid');
+  if (!grid) return;
+
+  const data = loadWeekTracker();
+
+  // Build the Mon–Sun range for the current week
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMon);
+  monday.setHours(0, 0, 0, 0);
+
+  const weekDays = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    weekDays.push(d);
+  }
+
+  // Update subtitle
+  const label = document.getElementById('tracker-week-label');
+  if (label) {
+    const opts = { day: 'numeric', month: 'long', year: 'numeric' };
+    const sunday = weekDays[6];
+    label.textContent = `${monday.toLocaleDateString('it-IT', opts)} – ${sunday.toLocaleDateString('it-IT', opts)}`;
+  }
+
+  const dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+  const dayEmojis = ['💪', '🔥', '⚡', '🎯', '🏅', '🌟', '😴'];
+  const todayStr = today();
+
+  grid.innerHTML = weekDays.map((d, i) => {
+    const dateStr = d.toISOString().split('T')[0];
+    const dayData = data[dateStr] || { alimentazione: false, allenamento: false };
+    const isToday = dateStr === todayStr;
+    const isPast = dateStr < todayStr;
+    const isFuture = dateStr > todayStr;
+
+    const bothDone = dayData.alimentazione && dayData.allenamento;
+    const noneDone = !dayData.alimentazione && !dayData.allenamento;
+
+    let cardClass = 'tracker-day-card';
+    if (isToday) cardClass += ' tracker-today';
+    if (bothDone) cardClass += ' tracker-complete';
+
+    const fmted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+    return `
+      <div class="${cardClass}" id="tday-${dateStr}">
+        <div class="tracker-day-header">
+          <div>
+            <div class="tracker-day-name">${dayEmojis[i]} ${dayNames[i]}</div>
+            <div class="tracker-day-date">${fmted}</div>
+          </div>
+          <div class="tracker-day-badge ${bothDone ? 'badge-done' : noneDone && isPast ? 'badge-miss' : 'badge-neutral'}">
+            ${bothDone ? '✅ Completato' : noneDone && isPast ? '⚠️ Saltato' : isToday ? '📍 Oggi' : isFuture ? '⏳ In arrivo' : '🔲 Parziale'}
+          </div>
+        </div>
+        <div class="tracker-toggles">
+          <button type="button"
+            class="tracker-toggle ${dayData.alimentazione ? 'active' : ''}"
+            onclick="toggleTrackerDay('${dateStr}', 'alimentazione')">
+            <span class="tracker-toggle-icon">${dayData.alimentazione ? '✅' : '🔲'}</span>
+            <div class="tracker-toggle-info">
+              <div class="tracker-toggle-label">Alimentazione</div>
+              <div class="tracker-toggle-sub">${dayData.alimentazione ? 'Scheda seguita!' : 'Non ancora segnato'}</div>
+            </div>
+          </button>
+          <button type="button"
+            class="tracker-toggle ${dayData.allenamento ? 'active' : ''}"
+            onclick="toggleTrackerDay('${dateStr}', 'allenamento')">
+            <span class="tracker-toggle-icon">${dayData.allenamento ? '✅' : '🔲'}</span>
+            <div class="tracker-toggle-info">
+              <div class="tracker-toggle-label">Allenamento</div>
+              <div class="tracker-toggle-sub">${dayData.allenamento ? 'Sessione completata!' : 'Non ancora segnato'}</div>
+            </div>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
 // ─── INIT ───────────────────────────────────────────────────
+
 (function init() {
   // Set today's date on all date inputs
   ['w-date', 'm-date', 'wo-date'].forEach(id => {

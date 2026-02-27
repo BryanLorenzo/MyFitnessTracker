@@ -2408,3 +2408,151 @@ body {
   font-weight: 500;
   color: #5eead4;
 }
+
+/* ===========================
+   TRACKER SETTIMANA
+=========================== */
+.tracker-week-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tracker-day-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  transition: var(--transition);
+  animation: fadeInUp 0.35s ease;
+}
+
+.tracker-day-card:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.tracker-day-card.tracker-today {
+  border-color: rgba(139, 92, 246, 0.45);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.07), rgba(99, 102, 241, 0.04));
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2), 0 8px 32px rgba(139, 92, 246, 0.12);
+}
+
+.tracker-day-card.tracker-complete {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.07), rgba(5, 150, 105, 0.03));
+}
+
+.tracker-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.tracker-day-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.tracker-day-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tracker-day-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tracker-day-badge.badge-done {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
+}
+
+.tracker-day-badge.badge-miss {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--accent-red);
+}
+
+.tracker-day-badge.badge-neutral {
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+
+.tracker-toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tracker-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-primary);
+}
+
+.tracker-toggle:hover {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.tracker-toggle.active {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.06));
+}
+
+.tracker-toggle-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.tracker-toggle.active .tracker-toggle-icon {
+  transform: scale(1.15);
+}
+
+.tracker-toggle-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tracker-toggle-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  transition: var(--transition);
+}
+
+.tracker-toggle.active .tracker-toggle-sub {
+  color: var(--accent-green);
+}
+
+/* Responsive tracker */
+@media (max-width: 600px) {
+  .tracker-toggles {
+    grid-template-columns: 1fr;
+  }
+
+  .tracker-day-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
