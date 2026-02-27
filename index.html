@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>FitTracker — Il tuo personal tracker</title>
+  <meta name="description"
+    content="Traccia il peso, i piani alimentari e le sessioni di allenamento in un'unica app." />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+
+  <!-- ======= LOGIN SCREEN ======= -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-glow login-glow-1"></div>
+    <div class="login-glow login-glow-2"></div>
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-icon">💪</div>
+        <div class="login-logo-text">FitTracker</div>
+        <div class="login-logo-sub">Il tuo personal tracker</div>
+      </div>
+      <h2 class="login-title">Accedi al tuo account</h2>
+      <p class="login-subtitle">Inserisci le tue credenziali per continuare</p>
+
+      <form id="login-form" autocomplete="on">
+        <div class="form-group">
+          <label class="form-label" for="login-email">📧 Email</label>
+          <input type="email" class="form-input" id="login-email" placeholder="es. mario@email.com" autocomplete="email"
+            required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">🔒 Password</label>
+          <div class="password-wrapper">
+            <input type="password" class="form-input" id="login-password" placeholder="La tua password"
+              autocomplete="current-password" required />
+            <button type="button" class="btn-toggle-pw" id="togglePw" title="Mostra/Nascondi password">👁️</button>
+          </div>
+        </div>
+        <div class="login-remember">
+          <label class="remember-label">
+            <input type="checkbox" id="login-remember" />
+            <span class="remember-check"></span>
+            Ricordami
+          </label>
+        </div>
+        <div class="login-error" id="login-error"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;">🚀
+          Accedi</button>
+        <div class="login-register-hint">Non hai un account? <span id="goRegister">Registrati</span></div>
+      </form>
+
+      <!-- Register panel -->
+      <form id="register-form" autocomplete="on" style="display:none;">
+        <div class="form-group">
+          <label class="form-label" for="reg-email">📧 Email</label>
+          <input type="email" class="form-input" id="reg-email" placeholder="es. mario@email.com" autocomplete="email"
+            required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-password">🔒 Crea Password</label>
+          <div class="password-wrapper">
+            <input type="password" class="form-input" id="reg-password" placeholder="Minimo 6 caratteri"
+              autocomplete="new-password" required />
+            <button type="button" class="btn-toggle-pw" id="toggleRegPw" title="Mostra/Nascondi password">👁️</button>
+          </div>
+        </div>
+        <div class="login-remember">
+          <label class="remember-label">
+            <input type="checkbox" id="reg-remember" />
+            <span class="remember-check"></span>
+            Ricordami
+          </label>
+        </div>
+        <div class="login-error" id="reg-error"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;">✅ Crea
+          Account</button>
+        <div class="login-register-hint">Hai già un account? <span id="goLogin">Accedi</span></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hamburger (mobile) -->
+  <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- ======= SIDEBAR ======= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">💪</div>
+      <div>
+        <div class="logo-text">FitTracker</div>
+        <div class="logo-sub">Il tuo personal tracker</div>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Principale</div>
+    <div class="nav-item active" data-page="dashboard">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Dashboard</span>
+    </div>
+
+    <div class="nav-section-label" style="margin-top:20px;">Salute</div>
+    <div class="nav-item" data-page="peso">
+      <span class="nav-icon">⚖️</span>
+      <span class="nav-label">Peso</span>
+    </div>
+    <div class="nav-item" data-page="alimentazione">
+      <span class="nav-icon">🥗</span>
+      <span class="nav-label">Alimentazione</span>
+    </div>
+    <div class="nav-item" data-page="allenamento">
+      <span class="nav-icon">🏋️</span>
+      <span class="nav-label">Allenamento</span>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" id="sidebar-user"></div>
+      <button class="btn-logout" id="logoutBtn">🚪 Esci</button>
+      <p class="sidebar-footer-text" style="margin-top:10px;">© 2026 FitTracker</p>
+    </div>
+
+  </aside>
+
+  <!-- ======= MAIN CONTENT ======= -->
+  <main class="main-content">
+
+    <!-- ========== DASHBOARD ========== -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Bentornato! <span>💪</span></h1>
+        <p>Ecco il tuo riepilogo di oggi — <span id="dash-date"></span></p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card weight">
+          <div class="stat-icon">⚖️</div>
+          <div class="stat-info">
+            <div class="stat-label">Ultimo peso</div>
+            <div class="stat-value" id="dash-weight">—<span class="stat-unit">kg</span></div>
+          </div>
+        </div>
+        <div class="stat-card workouts">
+          <div class="stat-icon">🏋️</div>
+          <div class="stat-info">
+            <div class="stat-label">Sessioni totali</div>
+            <div class="stat-value" id="dash-workouts">0</div>
+          </div>
+        </div>
+        <div class="stat-card meals">
+          <div class="stat-icon">🥗</div>
+          <div class="stat-info">
+            <div class="stat-label">Piani alimentari</div>
+            <div class="stat-value" id="dash-meals">0</div>
+          </div>
+        </div>
+        <div class="stat-card streak">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <div class="stat-label">Registrazioni peso</div>
+            <div class="stat-value" id="dash-entries">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-title">⚖️ Ultime Misurazioni Peso</div>
+          <div id="dash-weight-list">
+            <div class="empty-state">
+              <div class="empty-icon">⚖️</div>
+              <p>Nessuna misurazione registrata</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏋️ Ultime Sessioni di Allenamento</div>
+          <div id="dash-workout-list">
+            <div class="empty-state">
+              <div class="empty-icon">🏋️</div>
+              <p>Nessuna sessione registrata</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 Andamento Peso (ultimi 14 giorni)</div>
+          <div class="chart-wrapper" style="height:200px;">
+            <canvas id="dashWeightChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🥗 Ultimi Piani Alimentari</div>
+          <div id="dash-meal-list">
+            <div class="empty-state">
+              <div class="empty-icon">🥗</div>
+              <p>Nessun piano alimentare salvato</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PESO ========== -->
+    <section class="page" id="page-peso">
+      <div class="page-header">
+        <h1>Traccia il tuo <span>Peso</span></h1>
+        <p>Inserisci e monitora l'andamento del tuo peso nel tempo</p>
+      </div>
+
+      <div class="weight-layout">
+        <!-- Left: Form + Summary -->
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-title">➕ Nuova Misurazione</div>
+            <div class="weight-value-display">
+              <span class="big-number" id="weight-preview">—</span>
+              <span class="big-unit">kg</span>
+              <br>
+              <span class="weight-change same" id="weight-change-desc">Inserisci il tuo peso</span>
+            </div>
+            <div class="divider"></div>
+            <form id="weight-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="w-date">📅 Data</label>
+                  <input type="date" class="form-input" id="w-date" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="w-value">⚖️ Peso (kg)</label>
+                  <input type="number" class="form-input" id="w-value" placeholder="es. 78.5" step="0.1" min="20"
+                    max="300" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="w-notes">📝 Note (opzionale)</label>
+                <input type="text" class="form-input" id="w-notes" placeholder="es. Dopo l'allenamento" />
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">💾 Salva Misurazione</button>
+            </form>
+          </div>
+
+          <!-- Weight Stats -->
+          <div class="card">
+            <div class="card-title">📊 Statistiche</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div style="background:var(--bg-input);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Peso Iniziale</div>
+                <div style="font-size:22px;font-weight:800;" id="stat-start">—</div>
+                <div style="font-size:11px;color:var(--text-muted);">kg</div>
+              </div>
+              <div style="background:var(--bg-input);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Peso Attuale</div>
+                <div style="font-size:22px;font-weight:800;" id="stat-current">—</div>
+                <div style="font-size:11px;color:var(--text-muted);">kg</div>
+              </div>
+              <div style="background:var(--bg-input);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Min</div>
+                <div style="font-size:22px;font-weight:800;color:var(--accent-green);" id="stat-min">—</div>
+                <div style="font-size:11px;color:var(--text-muted);">kg</div>
+              </div>
+              <div style="background:var(--bg-input);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Max</div>
+                <div style="font-size:22px;font-weight:800;color:var(--accent-red);" id="stat-max">—</div>
+                <div style="font-size:11px;color:var(--text-muted);">kg</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Chart + History -->
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-title" style="justify-content:space-between;">
+              <span>📈 Andamento Peso</span>
+              <select class="form-select" id="chart-range" style="width:auto;padding:5px 10px;font-size:12px;">
+                <option value="14">Ultimi 14 giorni</option>
+                <option value="30">Ultimi 30 giorni</option>
+                <option value="90">Ultimi 90 giorni</option>
+                <option value="0">Tutto</option>
+              </select>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="weightChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+              <span>🗓️ Storico Misurazioni</span>
+              <span id="weight-count" style="font-size:12px;color:var(--text-muted);font-weight:400;"></span>
+            </div>
+            <div class="history-list" id="weight-history">
+              <div class="empty-state">
+                <div class="empty-icon">⚖️</div>
+                <p>Nessuna misurazione ancora<br>Inizia inserendo il tuo peso!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ALIMENTAZIONE ========== -->
+    <section class="page" id="page-alimentazione">
+      <div class="page-header">
+        <h1>Piano <span>Alimentare</span></h1>
+        <p>Crea e gestisci i tuoi piani alimentari con i macronutrienti</p>
+      </div>
+
+      <div class="meal-layout">
+        <!-- Left: Form -->
+        <div>
+          <div class="card">
+            <div class="card-title">➕ Nuovo Piano Alimentare</div>
+            <form id="meal-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="m-date">📅 Data</label>
+                  <input type="date" class="form-input" id="m-date" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="m-name">📋 Nome Piano</label>
+                  <input type="text" class="form-input" id="m-name" placeholder="es. Giorno di Carico" required />
+                </div>
+              </div>
+
+              <div class="divider"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div class="card-title" style="margin:0;">🍽️ Alimenti</div>
+                <button type="button" class="btn btn-ghost btn-sm" id="add-food-btn">+ Aggiungi</button>
+              </div>
+
+              <!-- Table header -->
+              <div
+                style="display:grid;grid-template-columns:2fr 80px 70px 70px 70px 32px;gap:8px;padding:0 10px;margin-bottom:6px;">
+                <div
+                  style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+                  Alimento</div>
+                <div
+                  style="font-size:10px;color:var(--accent-orange);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">
+                  Kcal</div>
+                <div
+                  style="font-size:10px;color:var(--accent-green);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">
+                  Prot(g)</div>
+                <div
+                  style="font-size:10px;color:#818cf8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">
+                  Carb(g)</div>
+                <div
+                  style="font-size:10px;color:var(--accent-pink);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">
+                  Gras(g)</div>
+                <div></div>
+              </div>
+
+              <div id="food-items-container"></div>
+
+              <!-- Totals -->
+              <div id="meal-totals"
+                style="display:none;background:var(--bg-input);border-radius:10px;padding:12px;margin-top:10px;margin-bottom:16px;">
+                <div
+                  style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+                  Totali Piano</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                  <span class="macro-badge cal">🔥 <span id="total-cal">0</span> kcal</span>
+                  <span class="macro-badge prot">💪 <span id="total-prot">0</span>g proteine</span>
+                  <span class="macro-badge carb">🌾 <span id="total-carb">0</span>g carbo</span>
+                  <span class="macro-badge fat">🫒 <span id="total-fat">0</span>g grassi</span>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width:100%;">💾 Salva Piano</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Right: History -->
+        <div>
+          <div class="card-title" style="margin-bottom:16px;">
+            📚 Storico Piani Alimentari
+            <span id="meal-count"
+              style="font-size:12px;color:var(--text-muted);font-weight:400;margin-left:8px;"></span>
+          </div>
+          <div id="meal-history">
+            <div class="empty-state">
+              <div class="empty-icon">🥗</div>
+              <p>Nessun piano alimentare salvato<br>Inserisci il tuo primo piano!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ALLENAMENTO ========== -->
+    <section class="page" id="page-allenamento">
+      <div class="page-header">
+        <h1>Log <span>Allenamento</span></h1>
+        <p>Registra le sessioni o crea piani da seguire</p>
+      </div>
+
+      <!-- Sub-tabs -->
+      <div class="subtab-bar">
+        <button class="subtab active" data-tab="tracker">📋 Tracker Sessione</button>
+        <button class="subtab" data-tab="piani">📅 Piani di Allenamento</button>
+      </div>
+
+      <!-- ── TAB: TRACKER ── -->
+      <div class="subtab-content active" id="tab-tracker">
+        <div class="workout-layout">
+          <!-- Left: Session form -->
+          <div>
+            <div class="card">
+              <div class="card-title" style="justify-content:space-between;">
+                <span>➕ Nuova Sessione</span>
+                <span id="wo-plan-tag"
+                  style="display:none;font-size:11px;background:rgba(16,185,129,0.15);color:var(--accent-green);border-radius:6px;padding:3px 10px;font-weight:600;"></span>
+              </div>
+              <form id="workout-form">
+                <!-- Session type toggle -->
+                <div class="session-type-bar">
+                  <button type="button" class="session-type-btn active" data-type="gym">🏋️ Palestra</button>
+                  <button type="button" class="session-type-btn" data-type="run">🏃 Corsa</button>
+                  <button type="button" class="session-type-btn" data-type="rest">😴 Rest Day</button>
+                </div>
+
+                <div class="form-row" style="margin-top:16px;">
+                  <div class="form-group">
+                    <label class="form-label" for="wo-date">📅 Data</label>
+                    <input type="date" class="form-input" id="wo-date" required />
+                  </div>
+                  <div class="form-group" id="wo-name-group">
+                    <label class="form-label" for="wo-name">🏋️ Nome Sessione</label>
+                    <input type="text" class="form-input" id="wo-name" placeholder="es. Push Day, Gambe..." />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="wo-notes">📝 Note sessione</label>
+                  <input type="text" class="form-input" id="wo-notes"
+                    placeholder="es. Buona sessione, PR su panca..." />
+                </div>
+
+                <!-- ── BLOCCO CORSA ── -->
+                <div id="run-block" style="display:none;">
+                  <div class="divider"></div>
+                  <div class="run-fields-grid">
+                    <div class="form-group">
+                      <label class="form-label" for="run-duration">⏱️ Durata (min)</label>
+                      <input type="number" class="form-input" id="run-duration" placeholder="es. 45" min="1" max="600"
+                        step="1" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="run-speed">🕐 Passo medio (min/km)</label>
+                      <input type="text" class="form-input" id="run-speed" placeholder="es. 5:30" />
+                    </div>
+                  </div>
+                  <div class="run-stats-preview" id="run-stats-preview" style="display:none;">
+                    <span id="run-distance-preview">—</span>
+                    <span class="run-stat-label">km stimati</span>
+                  </div>
+                </div>
+
+                <!-- ── BLOCCO PALESTRA (esercizi) ── -->
+                <div id="gym-block">
+                  <div class="divider"></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                    <div class="card-title" style="margin:0;">🏃 Esercizi</div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="add-exercise-btn">+ Aggiungi
+                      Esercizio</button>
+                  </div>
+                  <div id="exercises-container"></div>
+                </div>
+
+                <!-- ── BLOCCO REST DAY ── -->
+                <div id="rest-block" style="display:none;">
+                  <div class="divider"></div>
+                  <div class="rest-day-banner">
+                    <div class="rest-day-icon">😴</div>
+                    <div>
+                      <div style="font-weight:700;margin-bottom:4px;">Rest Day</div>
+                      <div style="font-size:12px;color:var(--text-muted);">Il recupero è parte dell'allenamento!</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;">💾 Salva
+                  Sessione</button>
+              </form>
+
+            </div>
+          </div>
+
+          <!-- Right: Plans quick-use + History -->
+          <div>
+            <!-- Quick-use plans -->
+            <div id="tracker-plans-section" style="margin-bottom:20px;">
+              <div class="card-title" style="margin-bottom:12px;">⚡ Usa un Piano</div>
+              <div id="tracker-plans-list">
+                <div class="empty-state" style="padding:24px;">
+                  <div class="empty-icon" style="font-size:32px;">📅</div>
+                  <p>Crea prima un piano nella tab "Piani"</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Session history -->
+            <div class="card-title" style="margin-bottom:16px;">
+              📚 Storico Allenamenti
+              <span id="workout-count"
+                style="font-size:12px;color:var(--text-muted);font-weight:400;margin-left:8px;"></span>
+            </div>
+            <div id="workout-history">
+              <div class="empty-state">
+                <div class="empty-icon">🏋️</div>
+                <p>Nessuna sessione registrata<br>Inizia il tuo primo allenamento!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: PIANI ── -->
+      <div class="subtab-content" id="tab-piani">
+        <div class="workout-layout">
+          <!-- Left: Plan builder -->
+          <div>
+            <div class="card">
+              <div class="card-title">📅 Nuovo Piano di Allenamento</div>
+              <form id="wplan-form">
+                <div class="form-group">
+                  <label class="form-label" for="wp-name">📋 Nome del Piano</label>
+                  <input type="text" class="form-input" id="wp-name" placeholder="es. Push A, Pull B, Legs C..."
+                    required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="wp-desc">📝 Descrizione</label>
+                  <input type="text" class="form-input" id="wp-desc"
+                    placeholder="es. Allenamento spinta settimana 1..." />
+                </div>
+
+                <div class="divider"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                  <div class="card-title" style="margin:0;">🏃 Esercizi del Piano</div>
+                  <button type="button" class="btn btn-ghost btn-sm" id="add-plan-exercise-btn">+ Aggiungi
+                    Esercizio</button>
+                </div>
+
+                <div id="plan-exercises-container"></div>
+
+                <div style="display:flex;gap:10px;margin-top:8px;">
+                  <button type="submit" id="wplan-save-btn" class="btn btn-primary" style="flex:1;">💾 Salva
+                    Piano</button>
+                  <button type="button" id="wplan-cancel-btn" class="btn btn-ghost" style="display:none;"
+                    onclick="cancelEditWplan()">✕ Annulla</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right: Plan history -->
+          <div>
+            <div class="card-title" style="margin-bottom:16px;">
+              📚 I tuoi Piani
+              <span id="wplan-count"
+                style="font-size:12px;color:var(--text-muted);font-weight:400;margin-left:8px;"></span>
+            </div>
+            <div id="wplan-history">
+              <div class="empty-state">
+                <div class="empty-icon">📅</div>
+                <p>Nessun piano creato<br>Crea il tuo primo piano di allenamento!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
