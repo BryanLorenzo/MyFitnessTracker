@@ -616,14 +616,19 @@ function addFoodItemToSection(sectionKey) {
   div.className = 'food-item-row';
   div.id = id;
   div.innerHTML = `
-    <input type="text"   class="form-input food-name"  placeholder="es. Pollo alla griglia" />
-    <input type="number" class="form-input food-cal"   placeholder="0" min="0" step="1" style="text-align:center;" />
-    <input type="number" class="form-input food-prot"  placeholder="0" min="0" step="0.1" style="text-align:center;" />
-    <input type="number" class="form-input food-carb"  placeholder="0" min="0" step="0.1" style="text-align:center;" />
-    <input type="number" class="form-input food-fat"   placeholder="0" min="0" step="0.1" style="text-align:center;" />
-    <button type="button" class="btn-icon" onclick="document.getElementById('${id}')?.remove(); updateMealTotals();">✕</button>
+    <input type="text"   class="form-input food-name"  placeholder="es. Pollo alla griglia"
+      autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+    <input type="number" class="form-input food-cal"   placeholder="0" min="0" step="1" style="text-align:center;" autocomplete="off" />
+    <input type="number" class="form-input food-prot"  placeholder="0" min="0" step="0.1" style="text-align:center;" autocomplete="off" />
+    <input type="number" class="form-input food-carb"  placeholder="0" min="0" step="0.1" style="text-align:center;" autocomplete="off" />
+    <input type="number" class="form-input food-fat"   placeholder="0" min="0" step="0.1" style="text-align:center;" autocomplete="off" />
+    <button type="button" class="btn-icon remove-food-btn">✕</button>
   `;
   listEl.appendChild(div);
+  div.querySelector('.remove-food-btn').addEventListener('click', function () {
+    document.getElementById(id)?.remove();
+    updateMealTotals();
+  });
   div.querySelectorAll('input[type=number]').forEach(inp => inp.addEventListener('input', updateMealTotals));
   updateMealTotals();
 }
