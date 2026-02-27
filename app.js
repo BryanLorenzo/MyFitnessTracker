@@ -596,58 +596,51 @@ document.getElementById('w-value').addEventListener('input', function () {
 });
 
 // ─── MEAL PAGE ──────────────────────────────────────────────
-let foodItemCount = 0;
+const MEAL_SECTIONS = [
+  { key: 'colazione', label: '☀️ Colazione' },
+  { key: 'pranzo', label: '🍽️ Pranzo' },
+  { key: 'spuntino', label: '🍎 Spuntino' },
+  { key: 'cena', label: '🌙 Cena' },
+];
+let mealFoodCounters = { colazione: 0, pranzo: 0, spuntino: 0, cena: 0 };
 
 function renderMealPage() {
   renderMealHistory();
 }
 
-function addFoodItem() {
-  foodItemCount++;
-  const container = document.getElementById('food-items-container');
+function addFoodItemToSection(sectionKey) {
+  mealFoodCounters[sectionKey]++;
+  const listEl = document.getElementById('foods-' + sectionKey);
+  const id = `food-${sectionKey}-${mealFoodCounters[sectionKey]}`;
   const div = document.createElement('div');
   div.className = 'food-item-row';
-  div.id = 'food-' + foodItemCount;
+  div.id = id;
   div.innerHTML = `
     <input type="text"   class="form-input food-name"  placeholder="es. Pollo alla griglia" />
     <input type="number" class="form-input food-cal"   placeholder="0" min="0" step="1" style="text-align:center;" />
     <input type="number" class="form-input food-prot"  placeholder="0" min="0" step="0.1" style="text-align:center;" />
     <input type="number" class="form-input food-carb"  placeholder="0" min="0" step="0.1" style="text-align:center;" />
     <input type="number" class="form-input food-fat"   placeholder="0" min="0" step="0.1" style="text-align:center;" />
-    <button type="button" class="btn-icon" onclick="removeFoodItem('food-${foodItemCount}')">✕</button>
+    <button type="button" class="btn-icon" onclick="document.getElementById('${id}')?.remove(); updateMealTotals();">✕</button>
   `;
-  container.appendChild(div);
-
-  // Update totals on input
-  div.querySelectorAll('input[type=number]').forEach(inp => {
-    inp.addEventListener('input', updateMealTotals);
-  });
-
-  updateMealTotals();
-}
-
-function removeFoodItem(id) {
-  document.getElementById(id)?.remove();
+  listEl.appendChild(div);
+  div.querySelectorAll('input[type=number]').forEach(inp => inp.addEventListener('input', updateMealTotals));
   updateMealTotals();
 }
 
 function updateMealTotals() {
-  const rows = document.querySelectorAll('#food-items-container .food-item-row');
-  const totalsEl = document.getElementById('meal-totals');
-
-  if (rows.length === 0) {
-    totalsEl.style.display = 'none';
-    return;
-  }
-
-  let cal = 0, prot = 0, carb = 0, fat = 0;
-  rows.forEach(r => {
-    cal += parseFloat(r.querySelector('.food-cal').value) || 0;
-    prot += parseFloat(r.querySelector('.food-prot').value) || 0;
-    carb += parseFloat(r.querySelector('.food-carb').value) || 0;
-    fat += parseFloat(r.querySelector('.food-fat').value) || 0;
+  let cal = 0, prot = 0, carb = 0, fat = 0, totalRows = 0;
+  MEAL_SECTIONS.forEach(({ key }) => {
+    document.querySelectorAll(`#foods-${key} .food-item-row`).forEach(r => {
+      totalRows++;
+      cal += parseFloat(r.querySelector('.food-cal').value) || 0;
+      prot += parseFloat(r.querySelector('.food-prot').value) || 0;
+      carb += parseFloat(r.querySelector('.food-carb').value) || 0;
+      fat += parseFloat(r.querySelector('.food-fat').value) || 0;
+    });
   });
-
+  const totalsEl = document.getElementById('meal-totals');
+  if (totalRows === 0) { totalsEl.style.display = 'none'; return; }
   document.getElementById('total-cal').textContent = Math.round(cal);
   document.getElementById('total-prot').textContent = prot.toFixed(1);
   document.getElementById('total-carb').textContent = carb.toFixed(1);
@@ -655,40 +648,52 @@ function updateMealTotals() {
   totalsEl.style.display = 'block';
 }
 
-document.getElementById('add-food-btn').addEventListener('click', addFoodItem);
+// Wire up section add-food buttons
+document.querySelectorAll('.meal-section').forEach(section => {
+  const key = section.dataset.meal;
+  section.querySelector('.meal-add-food-btn').addEventListener('click', () => addFoodItemToSection(key));
+});
 
 document.getElementById('meal-form').addEventListener('submit', function (e) {
   e.preventDefault();
   const date = document.getElementById('m-date').value;
   const name = document.getElementById('m-name').value.trim();
-
-  const rows = document.querySelectorAll('#food-items-container .food-item-row');
-  const foods = [];
-  rows.forEach(r => {
-    const foodName = r.querySelector('.food-name').value.trim();
-    if (foodName) {
-      foods.push({
-        name: foodName,
-        cal: parseFloat(r.querySelector('.food-cal').value) || 0,
-        prot: parseFloat(r.querySelector('.food-prot').value) || 0,
-        carb: parseFloat(r.querySelector('.food-carb').value) || 0,
-        fat: parseFloat(r.querySelector('.food-fat').value) || 0,
-      });
-    }
-  });
-
   if (!date || !name) return;
 
-  state.mealPlans.push({ id: uid(), date, name, foods });
+  // Collect foods per section
+  const sections = {};
+  MEAL_SECTIONS.forEach(({ key }) => {
+    const foods = [];
+    document.querySelectorAll(`#foods-${key} .food-item-row`).forEach(r => {
+      const foodName = r.querySelector('.food-name').value.trim();
+      if (foodName) {
+        foods.push({
+          name: foodName,
+          cal: parseFloat(r.querySelector('.food-cal').value) || 0,
+          prot: parseFloat(r.querySelector('.food-prot').value) || 0,
+          carb: parseFloat(r.querySelector('.food-carb').value) || 0,
+          fat: parseFloat(r.querySelector('.food-fat').value) || 0,
+        });
+      }
+    });
+    sections[key] = foods;
+  });
+
+  // Build flat foods array for backward compat with dashboard
+  const allFoods = MEAL_SECTIONS.flatMap(({ key }) => sections[key]);
+
+  state.mealPlans.push({ id: uid(), date, name, foods: allFoods, sections });
   save();
   toast('Piano alimentare salvato!');
 
   // Reset form
   this.reset();
   document.getElementById('m-date').value = today();
-  document.getElementById('food-items-container').innerHTML = '';
+  MEAL_SECTIONS.forEach(({ key }) => {
+    document.getElementById('foods-' + key).innerHTML = '';
+    mealFoodCounters[key] = 0;
+  });
   document.getElementById('meal-totals').style.display = 'none';
-  foodItemCount = 0;
 
   renderMealHistory();
 });
@@ -708,27 +713,63 @@ function renderMealHistory() {
   }
 
   container.innerHTML = sorted.map(m => {
-    const totalCal = m.foods.reduce((s, f) => s + (f.cal || 0), 0);
-    const totalProt = m.foods.reduce((s, f) => s + (f.prot || 0), 0);
-    const totalCarb = m.foods.reduce((s, f) => s + (f.carb || 0), 0);
-    const totalFat = m.foods.reduce((s, f) => s + (f.fat || 0), 0);
+    // Support both old (flat foods[]) and new (sections{}) format
+    const hasSections = m.sections && typeof m.sections === 'object';
 
-    const foodRows = m.foods.length
-      ? `<table class="food-table">
-          <thead><tr>
-            <th>Alimento</th><th>Kcal</th><th>Prot</th><th>Carb</th><th>Grassi</th>
-          </tr></thead>
-          <tbody>
-            ${m.foods.map(f => `<tr>
+    let sectionsHTML = '';
+    if (hasSections) {
+      sectionsHTML = MEAL_SECTIONS.map(({ key, label }) => {
+        const foods = m.sections[key] || [];
+        if (!foods.length) return '';
+        const sCal = foods.reduce((s, f) => s + (f.cal || 0), 0);
+        const sProt = foods.reduce((s, f) => s + (f.prot || 0), 0);
+        const sCarb = foods.reduce((s, f) => s + (f.carb || 0), 0);
+        const sFat = foods.reduce((s, f) => s + (f.fat || 0), 0);
+        return `
+          <div class="history-meal-section">
+            <div class="history-meal-section-title">${label}</div>
+            <table class="food-table">
+              <thead><tr><th>Alimento</th><th>Kcal</th><th>Prot</th><th>Carb</th><th>Grassi</th></tr></thead>
+              <tbody>
+                ${foods.map(f => `<tr>
+                  <td>${f.name}</td>
+                  <td style="color:var(--accent-orange);">${f.cal}</td>
+                  <td style="color:var(--accent-green);">${f.prot}g</td>
+                  <td style="color:#818cf8;">${f.carb}g</td>
+                  <td style="color:var(--accent-pink);">${f.fat}g</td>
+                </tr>`).join('')}
+              </tbody>
+              <tfoot><tr class="food-table-total">
+                <td style="font-weight:600;">Totale</td>
+                <td style="color:var(--accent-orange);font-weight:600;">${Math.round(sCal)}</td>
+                <td style="color:var(--accent-green);font-weight:600;">${sProt.toFixed(1)}g</td>
+                <td style="color:#818cf8;font-weight:600;">${sCarb.toFixed(1)}g</td>
+                <td style="color:var(--accent-pink);font-weight:600;">${sFat.toFixed(1)}g</td>
+              </tr></tfoot>
+            </table>
+          </div>`;
+      }).join('');
+    } else {
+      // Legacy: flat foods list
+      sectionsHTML = (m.foods || []).length
+        ? `<table class="food-table">
+            <thead><tr><th>Alimento</th><th>Kcal</th><th>Prot</th><th>Carb</th><th>Grassi</th></tr></thead>
+            <tbody>${(m.foods || []).map(f => `<tr>
               <td>${f.name}</td>
               <td style="color:var(--accent-orange);">${f.cal}</td>
               <td style="color:var(--accent-green);">${f.prot}g</td>
               <td style="color:#818cf8;">${f.carb}g</td>
               <td style="color:var(--accent-pink);">${f.fat}g</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>`
-      : '<p style="font-size:13px;color:var(--text-muted);">Nessun alimento inserito</p>';
+            </tr>`).join('')}</tbody>
+          </table>`
+        : '<p style="font-size:13px;color:var(--text-muted);">Nessun alimento inserito</p>';
+    }
+
+    const allFoods = m.foods || [];
+    const totalCal = allFoods.reduce((s, f) => s + (f.cal || 0), 0);
+    const totalProt = allFoods.reduce((s, f) => s + (f.prot || 0), 0);
+    const totalCarb = allFoods.reduce((s, f) => s + (f.carb || 0), 0);
+    const totalFat = allFoods.reduce((s, f) => s + (f.fat || 0), 0);
 
     return `
       <div class="meal-plan-card" id="mp-${m.id}">
@@ -745,7 +786,7 @@ function renderMealHistory() {
           <span class="macro-badge carb">🌾 ${totalCarb.toFixed(1)}g carb</span>
           <span class="macro-badge fat">🫒 ${totalFat.toFixed(1)}g grassi</span>
         </div>
-        ${foodRows}
+        ${sectionsHTML}
       </div>`;
   }).join('');
 }

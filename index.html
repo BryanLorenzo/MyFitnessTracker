@@ -328,37 +328,78 @@
               </div>
 
               <div class="divider"></div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <div class="card-title" style="margin:0;">🍽️ Alimenti</div>
-                <button type="button" class="btn btn-ghost btn-sm" id="add-food-btn">+ Aggiungi</button>
+
+              <!-- ── COLAZIONE ── -->
+              <div class="meal-section" data-meal="colazione">
+                <div class="meal-section-header">
+                  <div class="meal-section-title">☀️ Colazione</div>
+                  <button type="button" class="btn btn-ghost btn-sm meal-add-food-btn">+ Alimento</button>
+                </div>
+                <div class="meal-food-col-labels">
+                  <div>Alimento</div>
+                  <div>Kcal</div>
+                  <div>Prot(g)</div>
+                  <div>Carb(g)</div>
+                  <div>Gras(g)</div>
+                  <div></div>
+                </div>
+                <div class="meal-food-list" id="foods-colazione"></div>
               </div>
 
-              <!-- Table header -->
-              <div
-                style="display:grid;grid-template-columns:2fr 80px 70px 70px 70px 32px;gap:8px;padding:0 10px;margin-bottom:6px;">
-                <div
-                  style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
-                  Alimento</div>
-                <div
-                  style="font-size:10px;color:var(--accent-orange);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">
-                  Kcal</div>
-                <div
-                  style="font-size:10px;color:var(--accent-green);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">
-                  Prot(g)</div>
-                <div
-                  style="font-size:10px;color:#818cf8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">
-                  Carb(g)</div>
-                <div
-                  style="font-size:10px;color:var(--accent-pink);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">
-                  Gras(g)</div>
-                <div></div>
+              <!-- ── PRANZO ── -->
+              <div class="meal-section" data-meal="pranzo">
+                <div class="meal-section-header">
+                  <div class="meal-section-title">🍽️ Pranzo</div>
+                  <button type="button" class="btn btn-ghost btn-sm meal-add-food-btn">+ Alimento</button>
+                </div>
+                <div class="meal-food-col-labels">
+                  <div>Alimento</div>
+                  <div>Kcal</div>
+                  <div>Prot(g)</div>
+                  <div>Carb(g)</div>
+                  <div>Gras(g)</div>
+                  <div></div>
+                </div>
+                <div class="meal-food-list" id="foods-pranzo"></div>
               </div>
 
-              <div id="food-items-container"></div>
+              <!-- ── SPUNTINO ── -->
+              <div class="meal-section" data-meal="spuntino">
+                <div class="meal-section-header">
+                  <div class="meal-section-title">🍎 Spuntino</div>
+                  <button type="button" class="btn btn-ghost btn-sm meal-add-food-btn">+ Alimento</button>
+                </div>
+                <div class="meal-food-col-labels">
+                  <div>Alimento</div>
+                  <div>Kcal</div>
+                  <div>Prot(g)</div>
+                  <div>Carb(g)</div>
+                  <div>Gras(g)</div>
+                  <div></div>
+                </div>
+                <div class="meal-food-list" id="foods-spuntino"></div>
+              </div>
 
-              <!-- Totals -->
+              <!-- ── CENA ── -->
+              <div class="meal-section" data-meal="cena">
+                <div class="meal-section-header">
+                  <div class="meal-section-title">🌙 Cena</div>
+                  <button type="button" class="btn btn-ghost btn-sm meal-add-food-btn">+ Alimento</button>
+                </div>
+                <div class="meal-food-col-labels">
+                  <div>Alimento</div>
+                  <div>Kcal</div>
+                  <div>Prot(g)</div>
+                  <div>Carb(g)</div>
+                  <div>Gras(g)</div>
+                  <div></div>
+                </div>
+                <div class="meal-food-list" id="foods-cena"></div>
+              </div>
+
+              <!-- Totali Piano -->
               <div id="meal-totals"
-                style="display:none;background:var(--bg-input);border-radius:10px;padding:12px;margin-top:10px;margin-bottom:16px;">
+                style="display:none;background:var(--bg-input);border-radius:10px;padding:12px;margin-top:16px;margin-bottom:16px;">
                 <div
                   style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
                   Totali Piano</div>

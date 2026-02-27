@@ -856,6 +856,93 @@ body::after {
 }
 
 /* ===========================
+   MEAL SECTIONS (form)
+=========================== */
+.meal-section {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.meal-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.meal-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.3px;
+}
+
+.meal-food-col-labels {
+  display: grid;
+  grid-template-columns: 2fr 70px 70px 70px 70px 36px;
+  gap: 6px;
+  padding: 0 8px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.meal-food-col-labels div:first-child {
+  text-align: left;
+}
+
+.meal-section .food-item-row {
+  grid-template-columns: 2fr 70px 70px 70px 70px 36px;
+}
+
+/* Meal section colours */
+.meal-section[data-meal="colazione"] {
+  border-left: 3px solid #f59e0b;
+}
+
+.meal-section[data-meal="pranzo"] {
+  border-left: 3px solid var(--accent-green);
+}
+
+.meal-section[data-meal="spuntino"] {
+  border-left: 3px solid var(--accent-red);
+}
+
+.meal-section[data-meal="cena"] {
+  border-left: 3px solid #818cf8;
+}
+
+/* History meal section blocks */
+.history-meal-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.history-meal-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.food-table-total td {
+  border-top: 1px solid var(--border) !important;
+  border-bottom: none !important;
+  padding-top: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ===========================
    WORKOUT PAGE
 =========================== */
 .workout-layout {
@@ -1157,6 +1244,7 @@ body::after {
 
 /* ── 1100px: stack two-column layouts ── */
 @media (max-width: 1100px) {
+
   .weight-layout,
   .meal-layout,
   .workout-layout {
@@ -1169,9 +1257,11 @@ body::after {
   .main-content {
     padding: 24px 20px;
   }
+
   .two-col {
     grid-template-columns: 1fr;
   }
+
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -1184,15 +1274,19 @@ body::after {
     transition: left 0.3s ease;
     z-index: 150;
   }
+
   .sidebar.open {
     left: 0;
   }
+
   .sidebar-overlay.show {
     display: block;
   }
+
   .hamburger {
     display: flex;
   }
+
   .main-content {
     margin-left: 0;
     padding: 24px 16px;
@@ -1200,20 +1294,24 @@ body::after {
     /* Safe-area for iPhone notch & Dynamic Island */
     padding-top: max(70px, calc(env(safe-area-inset-top) + 60px));
     padding-bottom: max(24px, env(safe-area-inset-bottom));
-    padding-left:  max(16px, env(safe-area-inset-left));
+    padding-left: max(16px, env(safe-area-inset-left));
     padding-right: max(16px, env(safe-area-inset-right));
   }
+
   .stats-grid {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
+
   .food-item-row {
     grid-template-columns: 1fr;
     gap: 6px;
   }
+
   .exercise-row-fields {
     grid-template-columns: 1fr 1fr;
   }
+
   .page-header h1 {
     font-size: 24px;
   }
@@ -1227,7 +1325,7 @@ body::after {
     padding: 16px 14px;
     padding-top: max(60px, calc(env(safe-area-inset-top) + 56px));
     padding-bottom: max(20px, env(safe-area-inset-bottom));
-    padding-left:  max(14px, env(safe-area-inset-left));
+    padding-left: max(14px, env(safe-area-inset-left));
     padding-right: max(14px, env(safe-area-inset-right));
   }
 
@@ -1235,10 +1333,12 @@ body::after {
   .page-header {
     margin-bottom: 18px;
   }
+
   .page-header h1 {
     font-size: 22px;
     line-height: 1.2;
   }
+
   .page-header p {
     font-size: 13px;
   }
@@ -1248,13 +1348,16 @@ body::after {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
+
   .stat-card {
     padding: 14px 12px;
     min-height: unset;
   }
+
   .stat-value {
     font-size: 24px;
   }
+
   .stat-label {
     font-size: 11px;
   }
@@ -1263,6 +1366,7 @@ body::after {
   .dashboard-bottom {
     grid-template-columns: 1fr;
   }
+
   .dashboard-grid {
     grid-template-columns: 1fr;
     gap: 14px;
@@ -1273,6 +1377,7 @@ body::after {
     padding: 16px 14px;
     border-radius: 14px;
   }
+
   .card-title {
     font-size: 13px;
   }
@@ -1283,13 +1388,17 @@ body::after {
     grid-template-columns: 1fr;
     gap: 10px;
   }
+
   .form-input,
   .form-select {
-    height: 48px;              /* Comfortable touch target */
-    font-size: 16px;           /* Prevent iOS auto-zoom */
+    height: 48px;
+    /* Comfortable touch target */
+    font-size: 16px;
+    /* Prevent iOS auto-zoom */
     padding: 12px 14px;
     border-radius: 10px;
   }
+
   .form-label {
     font-size: 12px;
     margin-bottom: 5px;
@@ -1301,11 +1410,13 @@ body::after {
     font-size: 14px;
     border-radius: 10px;
   }
+
   .btn-sm {
     height: 36px;
     font-size: 12px;
     padding: 0 12px;
   }
+
   .btn-primary {
     height: 50px;
     font-size: 15px;
@@ -1322,6 +1433,7 @@ body::after {
     gap: 6px;
     padding: 4px;
   }
+
   .subtab {
     font-size: 12px;
     padding: 9px 10px;
@@ -1332,6 +1444,7 @@ body::after {
     gap: 5px;
     padding: 4px;
   }
+
   .session-type-btn {
     font-size: 12px;
     padding: 9px 6px;
@@ -1342,14 +1455,17 @@ body::after {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
+
   .run-stats-preview {
     font-size: 18px;
     padding: 10px 14px;
   }
+
   .run-summary-bars {
     flex-direction: row;
     flex-wrap: nowrap;
   }
+
   .run-bar-value {
     font-size: 15px;
   }
@@ -1359,13 +1475,16 @@ body::after {
     padding: 14px 12px;
     border-radius: 12px;
   }
+
   .exercise-row-header {
     gap: 8px;
   }
+
   .exercise-row-fields {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
+
   .exercise-field-label {
     font-size: 11px;
   }
@@ -1375,9 +1494,11 @@ body::after {
     padding: 14px 12px;
     border-radius: 14px;
   }
+
   .workout-card-name {
     font-size: 15px;
   }
+
   .workout-card-meta {
     flex-wrap: wrap;
     gap: 6px;
@@ -1389,6 +1510,7 @@ body::after {
     font-size: 10px;
     padding: 3px 7px;
   }
+
   .exercise-list-name {
     font-size: 13px;
   }
@@ -1397,6 +1519,7 @@ body::after {
   .weight-chart-card {
     padding: 14px 10px;
   }
+
   .weight-entry-item {
     padding: 10px 12px;
     font-size: 13px;
@@ -1407,6 +1530,7 @@ body::after {
     grid-template-columns: 1fr;
     gap: 6px;
   }
+
   .food-item-label {
     font-size: 11px;
   }
@@ -1415,17 +1539,21 @@ body::after {
   .recent-item {
     padding: 10px 12px;
   }
+
   .recent-item-icon {
     width: 36px;
     height: 36px;
     font-size: 16px;
   }
+
   .recent-item-name {
     font-size: 13px;
   }
+
   .recent-item-sub {
     font-size: 11px;
   }
+
   .recent-item-value {
     font-size: 14px;
     font-weight: 700;
@@ -1437,6 +1565,7 @@ body::after {
     padding: 28px 18px;
     border-radius: 20px;
   }
+
   .login-title {
     font-size: 20px;
   }
@@ -1458,6 +1587,7 @@ body::after {
     right: 14px;
     left: 14px;
   }
+
   .toast {
     font-size: 13px;
     padding: 12px 16px;
