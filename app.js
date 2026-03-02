@@ -1,38 +1,28 @@
 /* ============================================================
    FitTracker — app.js
    State management, routing, Chart.js, all CRUD operations
+   Auth: Firebase Authentication
+   Storage: Firestore
 ============================================================ */
 
-// ─── AUTH ───────────────────────────────────────────────────
-const AUTH_KEY = 'ft_accounts';   // { email -> hashedPw }
-const SESSION_KEY = 'ft_session';   // { email, remember }
+// ─── FIREBASE INIT ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBJVJg3bB_TK_Uv8iCDllvwUroAadYMehU",
+  authDomain: "fittracker-a47a0.firebaseapp.com",
+  databaseURL: "https://fittracker-a47a0-default-rtdb.firebaseio.com",
+  projectId: "fittracker-a47a0",
+  storageBucket: "fittracker-a47a0.firebasestorage.app",
+  messagingSenderId: "179553576738",
+  appId: "1:179553576738:web:588b27c6049b15d384a77b",
+  measurementId: "G-FXF3TRJ6DE"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-function hashPw(pw) {
-  // Simple non-cryptographic hash (app is fully local)
-  let h = 0;
-  for (let i = 0; i < pw.length; i++) {
-    h = (Math.imul(31, h) + pw.charCodeAt(i)) | 0;
-  }
-  return h.toString(16);
-}
-
-function getAccounts() {
-  return JSON.parse(localStorage.getItem(AUTH_KEY)) || {};
-}
-
-function saveAccounts(accounts) {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(accounts));
-}
-
+// ─── AUTH HELPERS ────────────────────────────────────────────
 function getCurrentUser() {
-  const s = JSON.parse(localStorage.getItem(SESSION_KEY));
-  return s ? s.email : null;
-}
-
-function userDataKey(email, type) {
-  // Isolate each user's data
-  const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  return `ft_${safeEmail}_${type}`;
+  return auth.currentUser;
 }
 
 function showLoginError(id, msg) {
@@ -48,25 +38,14 @@ function clearLoginErrors() {
   });
 }
 
-function doLogin(email, remember) {
-  const overlay = document.getElementById('loginOverlay');
-  overlay.classList.add('hidden');
-
-  if (remember) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ email, remember: true }));
-  } else {
-    sessionStorage.setItem('ft_session_temp', email);
-    localStorage.removeItem(SESSION_KEY);
-  }
-
-  loadUserState(email);
-  updateSidebarUser(email);
-  renderDashboard();
+// ── Show a loading state on login overlay ──
+function setLoginLoading(loading) {
+  const btns = document.querySelectorAll('#login-form button[type=submit], #register-form button[type=submit]');
+  btns.forEach(b => { b.disabled = loading; b.style.opacity = loading ? '0.6' : '1'; });
 }
 
 function doLogout() {
-  localStorage.removeItem(SESSION_KEY);
-  sessionStorage.removeItem('ft_session_temp');
+  auth.signOut();
   // Reset in-memory state
   state.weights = [];
   state.mealPlans = [];
@@ -79,11 +58,37 @@ function doLogout() {
   showLoginPanel();
 }
 
-function loadUserState(email) {
-  state.weights = JSON.parse(localStorage.getItem(userDataKey(email, 'weights'))) || [];
-  state.mealPlans = JSON.parse(localStorage.getItem(userDataKey(email, 'meals'))) || [];
-  state.workouts = JSON.parse(localStorage.getItem(userDataKey(email, 'workouts'))) || [];
-  state.wplans = JSON.parse(localStorage.getItem(userDataKey(email, 'wplans'))) || [];
+async function loadUserState(uid) {
+  try {
+    const snap = await db.ref('users/' + uid).once('value');
+    if (snap.exists()) {
+      const data = snap.val();
+      state.weights = data.weights || [];
+      state.mealPlans = data.mealPlans || [];
+      state.workouts = data.workouts || [];
+      state.wplans = data.wplans || [];
+    } else {
+      state.weights = []; state.mealPlans = []; state.workouts = []; state.wplans = [];
+    }
+  } catch (err) {
+    console.error('Errore caricamento dati:', err);
+  }
+}
+
+async function save() {
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    await db.ref('users/' + user.uid).set({
+      weights: state.weights,
+      mealPlans: state.mealPlans,
+      workouts: state.workouts,
+      wplans: state.wplans,
+    });
+  } catch (err) {
+    console.error('Errore salvataggio dati:', err);
+    toast('Errore di salvataggio', 'error');
+  }
 }
 
 function updateSidebarUser(email) {
@@ -106,27 +111,35 @@ function showRegisterPanel() {
 }
 
 // Login form submit
-document.getElementById('login-form').addEventListener('submit', function (e) {
+document.getElementById('login-form').addEventListener('submit', async function (e) {
   e.preventDefault();
   clearLoginErrors();
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pw = document.getElementById('login-password').value;
   const remember = document.getElementById('login-remember').checked;
 
-  const accounts = getAccounts();
-  if (!accounts[email]) {
-    showLoginError('login-error', '❌ Email non trovata. Registrati prima.');
-    return;
+  setLoginLoading(true);
+  try {
+    const persistence = remember
+      ? firebase.auth.Auth.Persistence.LOCAL
+      : firebase.auth.Auth.Persistence.SESSION;
+    await auth.setPersistence(persistence);
+    await auth.signInWithEmailAndPassword(email, pw);
+    // onAuthStateChanged will handle the rest
+  } catch (err) {
+    setLoginLoading(false);
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-email') {
+      showLoginError('login-error', '❌ Email non trovata. Registrati prima.');
+    } else if (err.code === 'auth/wrong-password') {
+      showLoginError('login-error', '❌ Password errata. Riprova.');
+    } else {
+      showLoginError('login-error', '❌ Errore: ' + err.message);
+    }
   }
-  if (accounts[email] !== hashPw(pw)) {
-    showLoginError('login-error', '❌ Password errata. Riprova.');
-    return;
-  }
-  doLogin(email, remember);
 });
 
 // Register form submit
-document.getElementById('register-form').addEventListener('submit', function (e) {
+document.getElementById('register-form').addEventListener('submit', async function (e) {
   e.preventDefault();
   clearLoginErrors();
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
@@ -137,14 +150,23 @@ document.getElementById('register-form').addEventListener('submit', function (e)
     showLoginError('reg-error', '❌ La password deve avere almeno 6 caratteri.');
     return;
   }
-  const accounts = getAccounts();
-  if (accounts[email]) {
-    showLoginError('reg-error', '❌ Email già registrata. Accedi invece.');
-    return;
+
+  setLoginLoading(true);
+  try {
+    const persistence = remember
+      ? firebase.auth.Auth.Persistence.LOCAL
+      : firebase.auth.Auth.Persistence.SESSION;
+    await auth.setPersistence(persistence);
+    await auth.createUserWithEmailAndPassword(email, pw);
+    // onAuthStateChanged will handle the rest
+  } catch (err) {
+    setLoginLoading(false);
+    if (err.code === 'auth/email-already-in-use') {
+      showLoginError('reg-error', '❌ Email già registrata. Accedi invece.');
+    } else {
+      showLoginError('reg-error', '❌ Errore: ' + err.message);
+    }
   }
-  accounts[email] = hashPw(pw);
-  saveAccounts(accounts);
-  doLogin(email, remember);
 });
 
 // Toggle panels
@@ -178,18 +200,11 @@ const state = {
   wplans: [],
 };
 
-function save() {
-  const email = getCurrentUser() || (sessionStorage.getItem('ft_session_temp'));
-  if (!email) return;
-  localStorage.setItem(userDataKey(email, 'weights'), JSON.stringify(state.weights));
-  localStorage.setItem(userDataKey(email, 'meals'), JSON.stringify(state.mealPlans));
-  localStorage.setItem(userDataKey(email, 'workouts'), JSON.stringify(state.workouts));
-  localStorage.setItem(userDataKey(email, 'wplans'), JSON.stringify(state.wplans));
-}
-
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
+
+
 
 // ─── CHARTS ─────────────────────────────────────────────────
 let weightChart = null;
@@ -1656,27 +1671,45 @@ function renderTrackerPlansPanel() {
 
 // ─── TRACKER SETTIMANA ──────────────────────────────────────
 
-function getWeekTrackerKey() {
-  const email = getCurrentUser() || sessionStorage.getItem('ft_session_temp');
-  if (!email) return null;
-  const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  // Key includes ISO week number so each week is independent
+function getWeekTrackerDocId() {
+  const user = auth.currentUser;
+  if (!user) return null;
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const weekNum = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
-  return `ft_${safeEmail}_tracker_${now.getFullYear()}_w${weekNum}`;
+  return `tracker_${now.getFullYear()}_w${weekNum}`;
+}
+
+// In-memory cache for week tracker (to avoid async issues in render)
+let _weekTrackerCache = {};
+
+async function loadWeekTrackerFromFirestore() {
+  const user = auth.currentUser;
+  if (!user) return {};
+  const docId = getWeekTrackerDocId();
+  if (!docId) return {};
+  try {
+    const snap = await db.ref('users/' + user.uid + '/tracker/' + docId).once('value');
+    _weekTrackerCache = snap.exists() ? (snap.val() || {}) : {};
+  } catch (err) {
+    console.error('Errore caricamento tracker:', err);
+    _weekTrackerCache = {};
+  }
+  return _weekTrackerCache;
 }
 
 function loadWeekTracker() {
-  const key = getWeekTrackerKey();
-  if (!key) return {};
-  return JSON.parse(localStorage.getItem(key)) || {};
+  return _weekTrackerCache;
 }
 
 function saveWeekTracker(data) {
-  const key = getWeekTrackerKey();
-  if (!key) return;
-  localStorage.setItem(key, JSON.stringify(data));
+  _weekTrackerCache = data;
+  const user = auth.currentUser;
+  if (!user) return;
+  const docId = getWeekTrackerDocId();
+  if (!docId) return;
+  db.ref('users/' + user.uid + '/tracker/' + docId).set(data)
+    .catch(err => console.error('Errore salvataggio tracker:', err));
 }
 
 function toggleTrackerDay(dateStr, type) {
@@ -1773,23 +1806,27 @@ function renderTrackerPage() {
 
 // ─── INIT ───────────────────────────────────────────────────
 
-(function init() {
-  // Set today's date on all date inputs
-  ['w-date', 'm-date', 'wo-date'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = today();
-  });
+// Set today's date on all date inputs
+['w-date', 'm-date', 'wo-date'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.value = today();
+});
 
-  // Check for existing session (remember me)
-  const remembered = JSON.parse(localStorage.getItem(SESSION_KEY));
-  if (remembered && remembered.email) {
-    // Auto-login: load user data and hide overlay
-    loadUserState(remembered.email);
-    updateSidebarUser(remembered.email);
+// Firebase auth state listener — source of truth for login/logout
+auth.onAuthStateChanged(async (user) => {
+  setLoginLoading(false);
+  if (user) {
+    // User logged in: load data and show app
+    await loadUserState(user.uid);
+    await loadWeekTrackerFromFirestore();
+    updateSidebarUser(user.email);
     document.getElementById('loginOverlay').classList.add('hidden');
     renderDashboard();
   } else {
-    // Show login screen — don't render dashboard yet
+    // User logged out: show login screen
+    state.weights = []; state.mealPlans = []; state.workouts = []; state.wplans = [];
+    _weekTrackerCache = {};
     document.getElementById('loginOverlay').classList.remove('hidden');
+    showLoginPanel();
   }
-})();
+});
