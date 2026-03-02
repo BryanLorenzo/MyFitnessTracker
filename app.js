@@ -1669,140 +1669,161 @@ function renderTrackerPlansPanel() {
 }
 
 
-// ─── TRACKER SETTIMANA ──────────────────────────────────────
+// ─── TRACKER MENSILE ────────────────────────────────────────
 
-function getWeekTrackerDocId() {
-  const user = auth.currentUser;
-  if (!user) return null;
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const weekNum = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
-  return `tracker_${now.getFullYear()}_w${weekNum}`;
+// Current month being viewed { year, month (0-based) }
+let _calView = { year: new Date().getFullYear(), month: new Date().getMonth() };
+// Cache: { 'YYYY-MM': { 'YYYY-MM-DD': { alimentazione: bool, allenamento: bool } } }
+let _calCache = {};
+// Day currently open in modal
+let _calOpenDate = null;
+
+function calMonthKey(year, month) {
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
 }
 
-// In-memory cache for week tracker (to avoid async issues in render)
-let _weekTrackerCache = {};
-
-async function loadWeekTrackerFromFirestore() {
+async function loadCalMonth(year, month) {
   const user = auth.currentUser;
   if (!user) return {};
-  const docId = getWeekTrackerDocId();
-  if (!docId) return {};
+  const key = calMonthKey(year, month);
+  if (_calCache[key]) return _calCache[key];
   try {
-    const snap = await db.ref('users/' + user.uid + '/tracker/' + docId).once('value');
-    _weekTrackerCache = snap.exists() ? (snap.val() || {}) : {};
+    const snap = await db.ref(`users/${user.uid}/cal/${key}`).once('value');
+    _calCache[key] = snap.exists() ? (snap.val() || {}) : {};
   } catch (err) {
-    console.error('Errore caricamento tracker:', err);
-    _weekTrackerCache = {};
+    console.error('Errore caricamento mese:', err);
+    _calCache[key] = {};
   }
-  return _weekTrackerCache;
+  return _calCache[key];
 }
 
-function loadWeekTracker() {
-  return _weekTrackerCache;
-}
-
-function saveWeekTracker(data) {
-  _weekTrackerCache = data;
+function saveCalMonth(year, month) {
   const user = auth.currentUser;
   if (!user) return;
-  const docId = getWeekTrackerDocId();
-  if (!docId) return;
-  db.ref('users/' + user.uid + '/tracker/' + docId).set(data)
-    .catch(err => console.error('Errore salvataggio tracker:', err));
+  const key = calMonthKey(year, month);
+  db.ref(`users/${user.uid}/cal/${key}`).set(_calCache[key] || {})
+    .catch(err => console.error('Errore salvataggio mese:', err));
 }
 
-function toggleTrackerDay(dateStr, type) {
-  const data = loadWeekTracker();
-  if (!data[dateStr]) data[dateStr] = { alimentazione: false, allenamento: false };
-  data[dateStr][type] = !data[dateStr][type];
-  saveWeekTracker(data);
-  renderTrackerPage();
+function calToggle(type) {
+  if (!_calOpenDate) return;
+  const { year, month } = _calView;
+  const key = calMonthKey(year, month);
+  if (!_calCache[key]) _calCache[key] = {};
+  if (!_calCache[key][_calOpenDate]) _calCache[key][_calOpenDate] = { alimentazione: false, allenamento: false };
+  _calCache[key][_calOpenDate][type] = !_calCache[key][_calOpenDate][type];
+  saveCalMonth(year, month);
+  _updateModalUI(_calOpenDate);
+  renderCalGrid();
 }
 
-function renderTrackerPage() {
-  const grid = document.getElementById('tracker-week-grid');
-  if (!grid) return;
+function _updateModalUI(dateStr) {
+  const { year, month } = _calView;
+  const key = calMonthKey(year, month);
+  const d = (_calCache[key] || {})[dateStr] || { alimentazione: false, allenamento: false };
 
-  const data = loadWeekTracker();
+  document.getElementById('calCheckAlim').textContent = d.alimentazione ? '✅' : '○';
+  document.getElementById('calSubAlim').textContent = d.alimentazione ? 'Seguita! 🎉' : 'Non segnata';
+  document.getElementById('calToggleAlim').classList.toggle('active', d.alimentazione);
 
-  // Build the Mon–Sun range for the current week
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sun
-  const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMon);
-  monday.setHours(0, 0, 0, 0);
+  document.getElementById('calCheckAll').textContent = d.allenamento ? '✅' : '○';
+  document.getElementById('calSubAll').textContent = d.allenamento ? 'Completato! 💪' : 'Non segnato';
+  document.getElementById('calToggleAll').classList.toggle('active', d.allenamento);
+}
 
-  const weekDays = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    weekDays.push(d);
-  }
+function openCalModal(dateStr) {
+  _calOpenDate = dateStr;
+  const [y, m, dd] = dateStr.split('-');
+  const label = new Date(Number(y), Number(m) - 1, Number(dd))
+    .toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('calModalTitle').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+  _updateModalUI(dateStr);
+  document.getElementById('calModalOverlay').classList.add('open');
+}
 
-  // Update subtitle
-  const label = document.getElementById('tracker-week-label');
-  if (label) {
-    const opts = { day: 'numeric', month: 'long', year: 'numeric' };
-    const sunday = weekDays[6];
-    label.textContent = `${monday.toLocaleDateString('it-IT', opts)} – ${sunday.toLocaleDateString('it-IT', opts)}`;
-  }
+function closeCalModal() {
+  _calOpenDate = null;
+  document.getElementById('calModalOverlay').classList.remove('open');
+}
 
-  const dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
-  const dayEmojis = ['💪', '🔥', '⚡', '🎯', '🏅', '🌟', '😴'];
+function renderCalGrid() {
+  const { year, month } = _calView;
+  const key = calMonthKey(year, month);
+  const data = _calCache[key] || {};
   const todayStr = today();
 
-  grid.innerHTML = weekDays.map((d, i) => {
-    const dateStr = d.toISOString().split('T')[0];
+  // Month label
+  document.getElementById('cal-month-label').textContent =
+    new Date(year, month, 1).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+      .replace(/^\w/, c => c.toUpperCase());
+
+  // First day of month — offset for Mon-first grid
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Mon=0
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  let cells = '';
+  // Empty cells before first day
+  for (let i = 0; i < startOffset; i++) {
+    cells += `<div class="cal-cell cal-cell-empty"></div>`;
+  }
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const dayData = data[dateStr] || { alimentazione: false, allenamento: false };
     const isToday = dateStr === todayStr;
-    const isPast = dateStr < todayStr;
     const isFuture = dateStr > todayStr;
 
-    const bothDone = dayData.alimentazione && dayData.allenamento;
-    const noneDone = !dayData.alimentazione && !dayData.allenamento;
+    let colorClass = '';
+    if (!isFuture) {
+      const a = dayData.alimentazione, t = dayData.allenamento;
+      if (a && t) colorClass = 'cal-cell-green';
+      else if (a || t) colorClass = 'cal-cell-yellow';
+      else colorClass = 'cal-cell-red';
+    }
 
-    let cardClass = 'tracker-day-card';
-    if (isToday) cardClass += ' tracker-today';
-    if (bothDone) cardClass += ' tracker-complete';
-
-    const fmted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-
-    return `
-      <div class="${cardClass}" id="tday-${dateStr}">
-        <div class="tracker-day-header">
-          <div>
-            <div class="tracker-day-name">${dayEmojis[i]} ${dayNames[i]}</div>
-            <div class="tracker-day-date">${fmted}</div>
-          </div>
-          <div class="tracker-day-badge ${bothDone ? 'badge-done' : noneDone && isPast ? 'badge-miss' : 'badge-neutral'}">
-            ${bothDone ? '✅ Completato' : noneDone && isPast ? '⚠️ Saltato' : isToday ? '📍 Oggi' : isFuture ? '⏳ In arrivo' : '🔲 Parziale'}
-          </div>
-        </div>
-        <div class="tracker-toggles">
-          <button type="button"
-            class="tracker-toggle ${dayData.alimentazione ? 'active' : ''}"
-            onclick="toggleTrackerDay('${dateStr}', 'alimentazione')">
-            <span class="tracker-toggle-icon">${dayData.alimentazione ? '✅' : '🔲'}</span>
-            <div class="tracker-toggle-info">
-              <div class="tracker-toggle-label">Alimentazione</div>
-              <div class="tracker-toggle-sub">${dayData.alimentazione ? 'Scheda seguita!' : 'Non ancora segnato'}</div>
-            </div>
-          </button>
-          <button type="button"
-            class="tracker-toggle ${dayData.allenamento ? 'active' : ''}"
-            onclick="toggleTrackerDay('${dateStr}', 'allenamento')">
-            <span class="tracker-toggle-icon">${dayData.allenamento ? '✅' : '🔲'}</span>
-            <div class="tracker-toggle-info">
-              <div class="tracker-toggle-label">Allenamento</div>
-              <div class="tracker-toggle-sub">${dayData.allenamento ? 'Sessione completata!' : 'Non ancora segnato'}</div>
-            </div>
-          </button>
-        </div>
+    cells += `
+      <div class="cal-cell ${colorClass} ${isToday ? 'cal-cell-today' : ''}"
+           onclick="openCalModal('${dateStr}')">
+        <span class="cal-day-num">${d}</span>
+        ${isToday ? '<span class="cal-today-dot"></span>' : ''}
       </div>`;
-  }).join('');
+  }
+
+  document.getElementById('cal-grid').innerHTML = cells;
 }
+
+async function renderTrackerPage() {
+  const { year, month } = _calView;
+  await loadCalMonth(year, month);
+  renderCalGrid();
+}
+
+// Navigation buttons
+document.getElementById('cal-prev').addEventListener('click', async () => {
+  _calView.month--;
+  if (_calView.month < 0) { _calView.month = 11; _calView.year--; }
+  await loadCalMonth(_calView.year, _calView.month);
+  renderCalGrid();
+});
+document.getElementById('cal-next').addEventListener('click', async () => {
+  _calView.month++;
+  if (_calView.month > 11) { _calView.month = 0; _calView.year++; }
+  await loadCalMonth(_calView.year, _calView.month);
+  renderCalGrid();
+});
+// Close modal
+document.getElementById('calModalClose').addEventListener('click', closeCalModal);
+document.getElementById('calModalOverlay').addEventListener('click', function (e) {
+  if (e.target === this) closeCalModal();
+});
+
+// Legacy stubs (called at init but no longer needed)
+async function loadWeekTrackerFromFirestore() { }
+function loadWeekTracker() { return {}; }
+function saveWeekTracker() { }
+
+
 
 // ─── INIT ───────────────────────────────────────────────────
 

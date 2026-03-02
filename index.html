@@ -624,14 +624,66 @@
       </div>
     </section>
 
-    <!-- ========== TRACKER SETTIMANA ========== -->
+    <!-- ========== TRACKER MESE ========== -->
     <section class="page" id="page-tracker">
       <div class="page-header">
-        <h1>Tracker <span>Settimana</span></h1>
-        <p id="tracker-week-label">Settimana corrente</p>
+        <h1>Tracker <span>Mensile</span></h1>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
+          <button class="btn btn-ghost btn-sm" id="cal-prev">‹</button>
+          <span id="cal-month-label" style="font-size:1.1rem;font-weight:700;min-width:160px;text-align:center;"></span>
+          <button class="btn btn-ghost btn-sm" id="cal-next">›</button>
+        </div>
       </div>
-      <div id="tracker-week-grid" class="tracker-week-grid"></div>
+
+      <!-- Legenda -->
+      <div class="cal-legend">
+        <span class="cal-legend-dot cal-green"></span> Entrambi seguiti
+        <span class="cal-legend-dot cal-yellow" style="margin-left:14px;"></span> Uno solo
+        <span class="cal-legend-dot cal-red" style="margin-left:14px;"></span> Nessuno
+      </div>
+
+      <!-- Intestazione giorni settimana -->
+      <div class="cal-weekdays">
+        <div>Lun</div>
+        <div>Mar</div>
+        <div>Mer</div>
+        <div>Gio</div>
+        <div>Ven</div>
+        <div>Sab</div>
+        <div>Dom</div>
+      </div>
+
+      <!-- Griglia calendario -->
+      <div id="cal-grid" class="cal-grid"></div>
     </section>
+
+    <!-- ========== MODAL DETTAGLIO GIORNO ========== -->
+    <div class="cal-modal-overlay" id="calModalOverlay">
+      <div class="cal-modal">
+        <div class="cal-modal-header">
+          <div class="cal-modal-title" id="calModalTitle"></div>
+          <button class="btn-icon" id="calModalClose">✕</button>
+        </div>
+        <div class="cal-modal-body">
+          <button class="cal-toggle-btn" id="calToggleAlim" onclick="calToggle('alimentazione')">
+            <span class="cal-toggle-icon" id="calIconAlim">🥗</span>
+            <div>
+              <div class="cal-toggle-label">Nutrizione</div>
+              <div class="cal-toggle-sub" id="calSubAlim">Non segnata</div>
+            </div>
+            <span class="cal-toggle-check" id="calCheckAlim">○</span>
+          </button>
+          <button class="cal-toggle-btn" id="calToggleAll" onclick="calToggle('allenamento')">
+            <span class="cal-toggle-icon" id="calIconAll">🏋️</span>
+            <div>
+              <div class="cal-toggle-label">Allenamento</div>
+              <div class="cal-toggle-sub" id="calSubAll">Non segnato</div>
+            </div>
+            <span class="cal-toggle-check" id="calCheckAll">○</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
   </main>
 
