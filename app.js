@@ -1727,8 +1727,23 @@ function _updateModalUI(dateStr) {
   document.getElementById('calToggleAlim').classList.toggle('active', d.alimentazione);
 
   document.getElementById('calCheckAll').textContent = d.allenamento ? '✅' : '○';
-  document.getElementById('calSubAll').textContent = d.allenamento ? 'Completato! 💪' : 'Non segnato';
   document.getElementById('calToggleAll').classList.toggle('active', d.allenamento);
+
+  // Show workout name if one was logged on this day
+  const wo = state.workouts.find(w => w.date === dateStr);
+  let woSubText = d.allenamento ? 'Completato! 💪' : 'Non segnato';
+  if (wo) {
+    const wtype = wo.type || 'gym';
+    if (wtype === 'run') {
+      woSubText = `🏃 ${wo.name}${wo.distance ? ' · ' + wo.distance + ' km' : ''}`;
+    } else if (wtype === 'rest') {
+      woSubText = `😴 ${wo.name || 'Rest Day'}`;
+    } else {
+      const exCount = (wo.exercises || []).length;
+      woSubText = `🏋️ ${wo.name}${exCount ? ' · ' + exCount + ' es.' : ''}`;
+    }
+  }
+  document.getElementById('calSubAll').textContent = woSubText;
 }
 
 function openCalModal(dateStr) {
@@ -1782,10 +1797,22 @@ function renderCalGrid() {
       else colorClass = 'cal-cell-red';
     }
 
+    // Look up workout for this day
+    const wo = state.workouts.find(w => w.date === dateStr);
+    let woChip = '';
+    if (wo) {
+      const wtype = wo.type || 'gym';
+      const icon = wtype === 'run' ? '🏃' : wtype === 'rest' ? '😴' : '🏋️';
+      const label = wo.name ? (wo.name.length > 9 ? wo.name.slice(0, 9) + '…' : wo.name) : icon;
+      const chipClass = wtype === 'run' ? 'cal-wo-chip-run' : wtype === 'rest' ? 'cal-wo-chip-rest' : 'cal-wo-chip-gym';
+      woChip = `<span class="cal-wo-chip ${chipClass}">${icon} ${label}</span>`;
+    }
+
     cells += `
       <div class="cal-cell ${colorClass} ${isToday ? 'cal-cell-today' : ''}"
            onclick="openCalModal('${dateStr}')">
         <span class="cal-day-num">${d}</span>
+        ${woChip}
         ${isToday ? '<span class="cal-today-dot"></span>' : ''}
       </div>`;
   }
@@ -1840,6 +1867,8 @@ auth.onAuthStateChanged(async (user) => {
     // User logged in: load data and show app
     await loadUserState(user.uid);
     await loadWeekTrackerFromFirestore();
+    // Preload current calendar month so data is ready when tracker tab opens
+    await loadCalMonth(_calView.year, _calView.month);
     updateSidebarUser(user.email);
     document.getElementById('loginOverlay').classList.add('hidden');
     renderDashboard();
@@ -1847,6 +1876,7 @@ auth.onAuthStateChanged(async (user) => {
     // User logged out: show login screen
     state.weights = []; state.mealPlans = []; state.workouts = []; state.wplans = [];
     _weekTrackerCache = {};
+    _calCache = {};
     document.getElementById('loginOverlay').classList.remove('hidden');
     showLoginPanel();
   }

@@ -2504,6 +2504,38 @@ body {
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
+  margin-top: 2px;
+}
+
+/* ── Workout name chip inside calendar cell ── */
+.cal-wo-chip {
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 2px 5px;
+  border-radius: 5px;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  margin-top: 3px;
+}
+
+.cal-wo-chip-gym {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.cal-wo-chip-run {
+  background: rgba(20, 184, 166, 0.2);
+  color: #5eead4;
+}
+
+.cal-wo-chip-rest {
+  background: rgba(139, 92, 246, 0.18);
+  color: #c4b5fd;
 }
 
 /* Colors */
@@ -2676,6 +2708,11 @@ body {
 
   .cal-grid {
     gap: 3px;
+  }
+
+  .cal-wo-chip {
+    font-size: 7px;
+    padding: 1px 3px;
   }
 }
 
