@@ -1691,8 +1691,11 @@ async function loadCalMonth(year, month) {
     const snap = await db.ref(`users/${user.uid}/cal/${key}`).once('value');
     _calCache[key] = snap.exists() ? (snap.val() || {}) : {};
   } catch (err) {
-    console.error('Errore caricamento mese:', err);
-    _calCache[key] = {};
+    console.error('Errore caricamento tracker mensile:', err);
+    // Do NOT overwrite with {} — keep any existing cache data intact
+    // and notify the user instead of silently showing empty data
+    if (!_calCache[key]) _calCache[key] = {};
+    toast('⚠️ Errore caricamento tracker: controlla le regole del database Firebase', 'error');
   }
   return _calCache[key];
 }
@@ -1790,11 +1793,13 @@ function renderCalGrid() {
     const isFuture = dateStr > todayStr;
 
     let colorClass = '';
+    const isPast = dateStr < todayStr;
     if (!isFuture) {
       const a = dayData.alimentazione, t = dayData.allenamento;
       if (a && t) colorClass = 'cal-cell-green';
       else if (a || t) colorClass = 'cal-cell-yellow';
-      else colorClass = 'cal-cell-red';
+      else if (isPast) colorClass = 'cal-cell-red'; // only past days without data turn red
+      // today with no data: no color (neutral)
     }
 
     // Look up workout for this day
